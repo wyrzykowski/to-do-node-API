@@ -10,7 +10,7 @@ var Todo = mongoose.model("Todo", {
     minlength: 1, //is forrbidden to be '' empty string
     trim: true //white space is not counting like sign
   },
-  complited: {
+  completed: {
     type: Boolean,
     default: false
   },

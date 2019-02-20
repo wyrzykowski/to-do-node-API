@@ -1,6 +1,8 @@
-var express = require("express");
-var bodyParser = require("body-parser");
+const _ = require("lodash");
+const express = require("express");
+const bodyParser = require("body-parser");
 const { ObjectID } = require("mongodb");
+
 var { mongoose } = require("./db/mongoose.js");
 var { Todo } = require("./models/todo");
 var { Users } = require("./models/user");
@@ -72,6 +74,31 @@ app.delete("/todos/:id", (req, res) => {
     });
 });
 
+app.patch("/todos/:id", (req, res) => {
+  var id = req.params.id;
+  //ZABEZPIECZENIE ŻEBY UŻYTKWONIK NIE MÓGŁ UPDETOWAC WSZYSTKIEGO!
+  var body = _.pick(req.body, ["text", "completed"]); // pick pozwala tylko na modyfikowanie tych wartości jakie sa w nawiasach!!!
+  if (!ObjectID.isValid(id)) {
+    return res.status(404).send(); //Id is not valid
+  }
+  //Ustawainie completedAt jeśli użytkownik zupdetował że completed
+  if (_.isBoolean(body.completed) && body.completed) {
+    body.completedAt = new Date().getTime(); // jeśli zadanie zostanie skonczone to ustaw czas
+  } else {
+    body.completed = false;
+    body.completedAt = false;
+  }
+
+  Todo.findByIdAndUpdate(id, { $set: body }, { new: true })
+    .then(todo => {
+      //to {new:true} oznacza, ze zwóci zupdetowany obiekt
+      if (!todo) return res.status(404).send();
+      res.send(todo);
+    })
+    .catch(e => {
+      res.status(400).send();
+    });
+});
 app.listen(port, () => {
   console.log(`Started server on port ${port}`);
 });
