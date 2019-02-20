@@ -1,11 +1,12 @@
 var express = require("express");
 var bodyParser = require("body-parser");
-
+const { ObjectID } = require("mongodb");
 var { mongoose } = require("./db/mongoose.js");
 var { Todo } = require("./models/todo");
 var { Users } = require("./models/user");
 
 var app = express();
+const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json()); // set podsy parser to be use by express app
 //dzięki temu moge wysyłać coś w postaci JSONA do tej aplikacji, bo będzie mi
@@ -35,9 +36,26 @@ app.get("/todos", (req, res) => {
     }
   );
 });
+//Geting document by request from database by Id
+app.get("/todos/:id", (req, res) => {
+  var id = req.params.id;
 
-app.listen(3000, () => {
-  console.log("Started server on port 3000");
+  if (!ObjectID.isValid(id)) {
+    res.status(400).send(); //Id is not valid
+  }
+
+  Todo.findById(id)
+    .then(todo => {
+      if (!todo) return res.status(404).send(); //todo not exist!
+      return res.send(todo);
+    })
+    .catch(e => {
+      res.status(400).send(); //other error occured
+    });
+});
+
+app.listen(port, () => {
+  console.log(`Started server on port ${port}`);
 });
 
 module.exports = { app };
