@@ -56,21 +56,22 @@ app.get("/todos/:id", (req, res) => {
 
 app.delete("/todos/:id", (req, res) => {
   //get the id
-  var id = req.params.id;
+  var id = req.params.id; // to łapie to id z adresu
   //validate the i if not valid return 404
   if (!ObjectID.isValid(id)) {
-    res.status(400).send(); //Id is not valid
+    return res.status(404).send(); //Id is not valid
   }
   //remove todo by id if no doc send 404 if success send doc beck with 200
   Todo.findByIdAndRemove(id)
     .then(todo => {
       if (!todo) return res.status(404).send(); //todo not exist!
-      return res.status(200).send(todo);
+      return res.status(200).send({ todo });
     })
     .catch(e => {
       res.status(400).send();
     });
 });
+
 app.listen(port, () => {
   console.log(`Started server on port ${port}`);
 });
