@@ -47,13 +47,30 @@ app.get("/todos/:id", (req, res) => {
   Todo.findById(id)
     .then(todo => {
       if (!todo) return res.status(404).send(); //todo not exist!
-      return res.send(todo);
+      return res.status(200).send(todo);
     })
     .catch(e => {
       res.status(400).send(); //other error occured
     });
 });
 
+app.delete("/todos/:id", (req, res) => {
+  //get the id
+  var id = req.params.id;
+  //validate the i if not valid return 404
+  if (!ObjectID.isValid(id)) {
+    res.status(400).send(); //Id is not valid
+  }
+  //remove todo by id if no doc send 404 if success send doc beck with 200
+  Todo.findByIdAndRemove(id)
+    .then(todo => {
+      if (!todo) return res.status(404).send(); //todo not exist!
+      return res.status(200).send(todo);
+    })
+    .catch(e => {
+      res.status(400).send();
+    });
+});
 app.listen(port, () => {
   console.log(`Started server on port ${port}`);
 });
