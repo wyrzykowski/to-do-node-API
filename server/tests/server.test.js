@@ -7,11 +7,15 @@ const { Todo } = require("./../models/todo");
 const todos = [
   {
     _id: new ObjectID(),
-    text: "First test todo"
+    text: "First test todo",
+    completed: true,
+    completedAt: 333
   },
   {
     _id: new ObjectID(),
-    text: "second test todo"
+    text: "second test todo",
+    completed: true,
+    completedAt: 333
   }
 ];
 
@@ -158,6 +162,59 @@ describe("DELTE /todos/:id,", () => {
   it("should return 404 if object id is invalid", done => {
     request(app)
       .delete(`/todos/InvalidId`)
+      .expect(404)
+      .end(done);
+  });
+});
+
+describe("PATCH /todos/:id ", () => {
+  it("should update body of todo", done => {
+    var hexId = todos[1]._id.toHexString();
+    var customBody = {
+      completed: true,
+      text: "Test Text"
+    };
+    request(app)
+      .patch(`/todos/${hexId}`)
+      .send(customBody) // uwaga tu bez { } bo juz przekazuje obeikt
+      .expect(200)
+      .expect(res => {
+        expect(res.body.text).toBe(customBody.text);
+        expect(res.body.completed).toBe(customBody.completed);
+        expect(res.body.completedAt).toBeA("number"); //to ten czas ukoneczenia zadania
+      })
+      .end(done);
+  });
+
+  it("should set completedAt null when updated to completed:false", done => {
+    var hexId = todos[0]._id.toHexString();
+    var customBody = {
+      completed: false,
+      text: "Test Text"
+    };
+    request(app)
+      .patch(`/todos/${hexId}`)
+      .send(customBody) // uwaga tu bez { } bo juz przekazuje obeikt
+      .expect(200)
+      .expect(res => {
+        expect(res.body.text).toBe(customBody.text);
+        expect(res.body.completed).toBe(false);
+        expect(res.body.completedAt).toNotExist(); //UWAGA tu musi byc toNotExist null nie zadziała
+      })
+      .end(done);
+  });
+
+  it("should return 404 if todo not found", done => {
+    var hexId = new ObjectID().toHexString();
+    request(app)
+      .patch(`/todos/${hexId}`)
+      .expect(404)
+      .end(done);
+  });
+
+  it("should return 404 if object id is invalid", done => {
+    request(app)
+      .patch(`/todos/InvalidId`)
       .expect(404)
       .end(done);
   });
