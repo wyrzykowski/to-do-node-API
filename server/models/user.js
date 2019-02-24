@@ -1,12 +1,81 @@
-var mongoose = require("mongoose");
+const mongoose = require("mongoose");
+const validator = require("validator");
+const jwt = require("jsonwebtoken");
+const _ = require("lodash");
 
-var Users = mongoose.model("Users", {
+var UserSchema = new mongoose.Schema({
+  // schemat usert, który w przeciwieństwie do modelu może zawierać motedy
   email: {
     type: String,
     required: true,
+    trim: true,
     minlength: 1,
-    trim: true
-  }
+    unique: true,
+    validate: {
+      validator: validator.isEmail,
+      message: "{VALUE} is not a valid email"
+    }
+  },
+  password: {
+    type: String,
+    require: true,
+    minlength: 6
+  },
+  tokens: [
+    {
+      access: {
+        type: String,
+        required: true
+      },
+      token: {
+        type: String,
+        required: true
+      }
+    }
+  ]
 });
 
-module.exports = { Users };
+UserSchema.methods.toJSON = function() {
+  //nadpisanie defaultowej metody schematu
+  var user = this;
+  var userObject = user.toObject();
+
+  return _.pick(userObject, ["_id", "email"]);
+};
+
+UserSchema.methods.generateAuthToken = function() {
+  //metoda schematu, musi być function bo korzystam z this
+  var user = this;
+  var access = "auth";
+  var token = jwt
+    .sign({ _id: user._id.toHexString(), access }, "abc123")
+    .toString();
+
+  user.tokens = user.tokens.concat([{ access, token }]);
+
+  return user.save().then(() => {
+    return token;
+  });
+};
+
+UserSchema.statics.findByToken = function(token) {
+  var User = this;
+  var decoded;
+
+  try {
+    decoded = jwt.verify(token, "abc123");
+  } catch (e) {
+    return Promise.reject(); //skrócona wersja Promise
+  }
+  //if success
+  return User.findOne({
+    // zwróć user;a który spełania:
+    _id: decoded._id, //id po zweryfikowaniu po jwt
+    "tokens.token": token, //token pasuje
+    "tokens.access": "auth"
+  });
+};
+
+var User = mongoose.model("User", UserSchema);
+
+module.exports = { User };

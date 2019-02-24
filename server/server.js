@@ -1,19 +1,4 @@
-var env = process.env.NODE_ENV; // ta zmienna środowiskowa dostępna tylko na heroku
-
-console.log("#@@@@@@@@#@#@##@#@#@#@#@#@#", env);
-if (env === "development") {
-  process.env.PORT = 3000;
-  process.env.MONGODB_URI = "mongodb://localhost:27017/TodoApp";
-} else if (env === "test") {
-  process.env.PORT = 3000;
-  process.env.MONGODB_URI = "mongodb://localhost:27017/TodoApptest";
-} else {
-  process.env.MONGODB_URI =
-    "mongodb://" +
-    process.env.todoapp_db +
-    "@cluster0-shard-00-00-royto.mongodb.net:27017,cluster0-shard-00-01-royto.mongodb.net:27017,cluster0-shard-00-02-royto.mongodb.net:27017/ToooApp?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true";
-}
-
+require("./config/config.js");
 const _ = require("lodash");
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -21,7 +6,8 @@ const { ObjectID } = require("mongodb");
 
 var { mongoose } = require("./db/mongoose.js");
 var { Todo } = require("./models/todo");
-var { Users } = require("./models/user");
+var { User } = require("./models/user");
+var { authenticate } = require("./middleware/authenticate");
 
 var app = express();
 const port = process.env.PORT;
@@ -114,6 +100,29 @@ app.patch("/todos/:id", (req, res) => {
     .catch(e => {
       res.status(400).send();
     });
+});
+
+//SingUp New User:
+app.post("/users", (req, res) => {
+  //Mógbtm zrobić tak jak dla pojeynczego todo wyżej ale użye pick:
+  var body = _.pick(req.body, ["email", "password"]);
+  var user = new User(body);
+  user
+    .save()
+    .then(user => {
+      return user.generateAuthToken();
+      //res.send(user); // tak bylo kiedys przed tokenami
+    })
+    .then(token => {
+      res.header("x-auth", token).send(user); // ten user, kórego wysyłam pochodz z argumentu wyżej
+    })
+    .catch(e => {
+      res.status(400).send(e);
+    });
+});
+
+app.get("/users/me", authenticate, (req, res) => {
+  res.send(req.user);
 });
 app.listen(port, () => {
   console.log(`Started server on port ${port}`);
