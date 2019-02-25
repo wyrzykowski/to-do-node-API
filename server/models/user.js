@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
 const _ = require("lodash");
-
+const bcrypt = require("bcryptjs");
 var UserSchema = new mongoose.Schema({
   // schemat usert, który w przeciwieństwie do modelu może zawierać motedy
   email: {
@@ -75,7 +75,22 @@ UserSchema.statics.findByToken = function(token) {
     "tokens.access": "auth"
   });
 };
+UserSchema.pre("save", function(next) {
+  var user = this;
 
+  if (user.isModified("password")) {
+    // co ma zrobić gdy użytkownik modyfikuje już swoje haslo
+
+    bcrypt.genSalt(10, (err, salt) => {
+      bcrypt.hash(user.password, salt, (err, hash) => {
+        user.password = hash;
+        next();
+      });
+    }); //za kazdtm razem generuje inną sól
+  } else {
+    next();
+  }
+});
 var User = mongoose.model("User", UserSchema);
 
 module.exports = { User };
