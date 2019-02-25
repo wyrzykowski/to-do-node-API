@@ -80,7 +80,7 @@ UserSchema.pre("save", function(next) {
 
   if (user.isModified("password")) {
     // co ma zrobić gdy użytkownik modyfikuje już swoje haslo
-
+    //CZYLI WPISAL HASLO KTORE PRZESZLO WALIDACJE
     bcrypt.genSalt(10, (err, salt) => {
       bcrypt.hash(user.password, salt, (err, hash) => {
         user.password = hash;
@@ -91,6 +91,25 @@ UserSchema.pre("save", function(next) {
     next();
   }
 });
+
+UserSchema.statics.findByCredentials = function(email, password) {
+  var User = this;
+
+  return User.findOne({ email }).then(user => {
+    if (!user) {
+      return Promise.reject();
+    }
+
+    //ncrypt pracuje tylko an cllbackach dlatego musze zrobic nowe Promise
+    return new Promise((resolve, reject) => {
+      bcrypt.compare(password, user.password, (err, res) => {
+        if (res) resolve(user);
+        else reject();
+      });
+    });
+  });
+};
+
 var User = mongoose.model("User", UserSchema);
 
 module.exports = { User };
