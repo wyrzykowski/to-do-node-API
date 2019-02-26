@@ -17,6 +17,11 @@ var Todo = mongoose.model("Todo", {
   completedAt: {
     type: Number,
     default: null
+  },
+  _creator: {
+    //zawiera id osoby, kktóra je stowrzyła
+    type: mongoose.Schema.Types.ObjectId,
+    required: true
   }
 });
 

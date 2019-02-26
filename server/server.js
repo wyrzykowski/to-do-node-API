@@ -15,9 +15,11 @@ const port = process.env.PORT;
 app.use(bodyParser.json()); // set podsy parser to be use by express app
 //dzięki temu moge wysyłać coś w postaci JSONA do tej aplikacji, bo będzie mi
 //od razu parsował JSONA na obiekt JS, jak tego nie zparsuje to dostane w req.body = undefined
-app.post("/todos", (req, res) => {
+app.post("/todos", authenticate, (req, res) => {
+  // dodanie authenticate middlewarre pozwala na zrobienie tego routa prywatnym
   var todo = new Todo({
-    text: req.body.text
+    text: req.body.text,
+    _creator: req.user._id
   });
 
   todo.save().then(
@@ -30,8 +32,10 @@ app.post("/todos", (req, res) => {
   );
 });
 
-app.get("/todos", (req, res) => {
-  Todo.find().then(
+app.get("/todos", authenticate, (req, res) => {
+  Todo.find({
+    _creator: req.user._id //znajdz tylko te todos ktore naleza do tego uzytkownika
+  }).then(
     todos => {
       res.send({ todos });
     },
@@ -41,14 +45,17 @@ app.get("/todos", (req, res) => {
   );
 });
 //Geting document by request from database by Id
-app.get("/todos/:id", (req, res) => {
+app.get("/todos/:id", authenticate, (req, res) => {
   var id = req.params.id;
 
   if (!ObjectID.isValid(id)) {
     res.status(400).send(); //Id is not valid
   }
 
-  Todo.findById(id)
+  Todo.findOne({
+    _id: id,
+    _creator: req.user._id
+  })
     .then(todo => {
       if (!todo) return res.status(404).send(); //todo not exist!
       return res.status(200).send(todo);
@@ -58,7 +65,7 @@ app.get("/todos/:id", (req, res) => {
     });
 });
 
-app.delete("/todos/:id", (req, res) => {
+app.delete("/todos/:id", authenticate, (req, res) => {
   //get the id
   var id = req.params.id; // to łapie to id z adresu
   //validate the i if not valid return 404
@@ -66,7 +73,10 @@ app.delete("/todos/:id", (req, res) => {
     return res.status(404).send(); //Id is not valid
   }
   //remove todo by id if no doc send 404 if success send doc beck with 200
-  Todo.findByIdAndRemove(id)
+  Todo.findOneAndRemove({
+    _id: id,
+    _creator: req.user._id
+  })
     .then(todo => {
       if (!todo) return res.status(404).send(); //todo not exist!
       return res.status(200).send({ todo });
@@ -76,7 +86,7 @@ app.delete("/todos/:id", (req, res) => {
     });
 });
 
-app.patch("/todos/:id", (req, res) => {
+app.patch("/todos/:id", authenticate, (req, res) => {
   var id = req.params.id;
   //ZABEZPIECZENIE ŻEBY UŻYTKWONIK NIE MÓGŁ UPDETOWAC WSZYSTKIEGO!
   var body = _.pick(req.body, ["text", "completed"]); // pick pozwala tylko na modyfikowanie tych wartości jakie sa w nawiasach!!!
@@ -91,7 +101,11 @@ app.patch("/todos/:id", (req, res) => {
     body.completedAt = false;
   }
 
-  Todo.findByIdAndUpdate(id, { $set: body }, { new: true })
+  Todo.findOneAndUpdate(
+    { _id: id, _creator: req.user._id },
+    { $set: body },
+    { new: true }
+  )
     .then(todo => {
       //to {new:true} oznacza, ze zwóci zupdetowany obiekt
       if (!todo) return res.status(404).send();
