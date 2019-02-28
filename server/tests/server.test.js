@@ -18,7 +18,7 @@ describe("POST /todos", () => {
       .send({ text })
       .expect(200)
       .expect(res => {
-        expect(res.body.text).toBe(text);
+        expect(res.body.text) === text;
       })
       .end((err, res) => {
         if (err) {
@@ -28,8 +28,8 @@ describe("POST /todos", () => {
         //now if everything above was good, try to fetch data from database
         Todo.find({ text }) //FOR GET TEST - zeby byl rowny tylko temu textowi ktory znajdzie w mongo a nie wszystko co ma tam
           .then(todos => {
-            expect(todos.length).toBe(1);
-            expect(todos[0].text).toBe(text);
+            expect(todos.length) === 1;
+            expect(todos[0].text) === text;
             done();
           })
           .catch(e => {
@@ -55,7 +55,7 @@ describe("POST /todos", () => {
         //now if everything above was good, try to fetch data from database
         Todo.find()
           .then(todos => {
-            expect(todos.length).toBe(2); // Should be 0 //GET TEST 2 bo do get testuje 2 dokumenty
+            expect(todos.length) === 2; // Should be 0 //GET TEST 2 bo do get testuje 2 dokumenty
             done();
           })
           .catch(e => {
@@ -73,7 +73,7 @@ describe("GET /todos", () => {
       .set("x-auth", users[0].tokens[0].token)
       .expect(200)
       .expect(res => {
-        expect(res.body.todos.length).toBe(1);
+        expect(res.body.todos.length) === 1;
       })
       .end(done);
   });
@@ -86,7 +86,7 @@ describe("get /todos/:id", () => {
       .set("x-auth", users[0].tokens[0].token)
       .expect(200)
       .expect(res => {
-        expect(res.body.text).toBe(todos[0].text);
+        expect(res.body.text) === todos[0].text;
       })
       .end(done);
   });
@@ -127,7 +127,7 @@ describe("DELTE /todos/:id,", () => {
       .set("x-auth", users[1].tokens[0].token) //user[1] bo usuwam todos[1] a to nalezy do tego suera
       .expect(200)
       .expect(res => {
-        expect(res.body.todo._id).toBe(hexId);
+        expect(res.body.todo._id) === hexId;
       })
       .end((err, res) => {
         if (err) {
@@ -136,7 +136,7 @@ describe("DELTE /todos/:id,", () => {
         //Sprawdzenie czy delete naprawde usunął dokument
         Todo.findById(hexId)
           .then(res => {
-            expect(res).toNotExist();
+            expect(res).toBeFalsy();
             done();
           })
           .catch(e => {
@@ -159,7 +159,7 @@ describe("DELTE /todos/:id,", () => {
         //Sprawdzenie czy delete naprawde usunął dokument
         Todo.findById(hexId)
           .then(res => {
-            expect(res).toExist();
+            expect(res).toBeTruthy();
             done();
           })
           .catch(e => {
@@ -199,9 +199,9 @@ describe("PATCH /todos/:id ", () => {
       .send(customBody) // uwaga tu bez { } bo juz przekazuje obeikt
       .expect(200)
       .expect(res => {
-        expect(res.body.text).toBe(customBody.text);
-        expect(res.body.completed).toBe(customBody.completed);
-        expect(res.body.completedAt).toBeA("number"); //to ten czas ukoneczenia zadania
+        expect(res.body.text) === customBody.text;
+        expect(res.body.completed) === customBody.completed;
+        expect(typeof res.body.completedAt).toBe("number"); //to ten czas ukoneczenia zadania
       })
       .end(done);
   });
@@ -232,9 +232,9 @@ describe("PATCH /todos/:id ", () => {
       .send(customBody) // uwaga tu bez { } bo juz przekazuje obeikt
       .expect(200)
       .expect(res => {
-        expect(res.body.text).toBe(customBody.text);
-        expect(res.body.completed).toBe(false);
-        expect(res.body.completedAt).toNotExist(); //UWAGA tu musi byc toNotExist null nie zadziała
+        expect(res.body.text) === customBody.text;
+        expect(res.body.completed) === false;
+        expect(res.body.completedAt).toBeFalsy(); //UWAGA tu musi byc toNotExist null nie zadziała
       })
       .end(done);
   });
@@ -264,8 +264,8 @@ describe("GET /users/me", () => {
       .set("x-auth", users[0].tokens[0].token) // set słuzy do ustawienia headera w supetescie
       .expect(200)
       .expect(res => {
-        expect(res.body._id).toBe(users[0]._id.toHexString());
-        expect(res.body.email).toBe(users[0].email);
+        expect(res.body._id) === users[0]._id.toHexString();
+        expect(res.body.email) === users[0].email;
       })
       .end(done);
   });
@@ -290,9 +290,9 @@ describe("POST /users", () => {
       .send({ email, password })
       .expect(200)
       .expect(res => {
-        expect(res.headers["x-auth"]).toExist();
-        expect(res.body._id).toExist();
-        expect(res.body.email).toBe(email);
+        expect(res.headers["x-auth"]).toBeTruthy();
+        expect(res.body._id).toBeTruthy();
+        expect(res.body.email) === email;
       })
       .end(err => {
         //Sprawdzanie czy user jest w bazie danych
@@ -301,8 +301,8 @@ describe("POST /users", () => {
         }
         User.findOne({ email })
           .then(user => {
-            expect(user).toExist();
-            expect(user.password).toNotBe(password); //sprawdza czy hasło się zhasowało
+            expect(user).toBeTruthy();
+            expect(user.password).not.toBe(password); //sprawdza czy hasło się zhasowało
             done();
           })
           .catch(e => done(e));
@@ -333,7 +333,7 @@ describe("POST /users/login", () => {
       .send({ email: users[0].email, password: users[0].password })
       .expect(200)
       .expect(res => {
-        expect(res.headers["x-auth"]).toExist();
+        expect(res.headers["x-auth"]).toBeTruthy();
       })
       .end((err, res) => {
         if (err) return done(err);
@@ -341,7 +341,7 @@ describe("POST /users/login", () => {
         //Sprawdzanie czy token, który dostałem z requesta jest zgodny z tym w bazie danych
         User.findById(users[0]._id)
           .then(user => {
-            expect(user.tokens[1]).toInclude({
+            expect(user.toObject().tokens[1]).toMatchObject({
               access: "auth",
               token: res.headers["x-auth"]
             });
@@ -366,7 +366,7 @@ describe("POST /users/login", () => {
         if (err) return done(err);
         User.findById(users[1]._id)
           .then(user => {
-            expect(user.tokens.length).toBe(1); // bo dodalem wseed.js w tablicy token
+            expect(user.tokens.length) === 1; // bo dodalem wseed.js w tablicy token
             done();
           })
           .catch(e => {
@@ -386,7 +386,7 @@ describe("DELETE /users/me/token", () => {
         if (err) return done(err);
         User.findById(users[0]._id)
           .then(user => {
-            expect(user.tokens.length).toBe(0);
+            expect(user.tokens.length) === 0;
             done();
           })
           .catch(e => {
